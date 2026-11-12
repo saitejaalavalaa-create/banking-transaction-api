@@ -1,11 +1,28 @@
 from pydantic import BaseModel
 from main import deposit_money, withdraw_money
 from fastapi import FastAPI, HTTPException
+import sqlite3
+
+app = FastAPI()
+
+@app.get("/account/{account_id}")
+def get_account(account_id: int):
+    connection = sqlite3.connect("banking.db")
+    cursor = connection.execute(
+        "SELECT * FROM accounts WHERE account_id = ?", (account_id,)
+    )
+    account = cursor.fetchone()
+    connection.close()
+
+    if account is None:
+        raise HTTPException(status_code=404, detail ="Account not found")
+    return { "account_id": account[0], "name": account[1], "balance_cents": account[2] }
+
 
 class DepositRequest(BaseModel):
     balance: float
     deposit: float
-app = FastAPI()
+
 @app.get("/")
 def home():
     return {"message": "Welcome to the Banking Transaction API!"}
